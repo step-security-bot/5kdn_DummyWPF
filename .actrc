@@ -1,0 +1,4 @@
+# Windows ジョブはホストマシンで実行（self-hosted 相当）
+-P windows-latest=-self-hosted
+--artifact-server-path .act-artifacts
+--env ACT=true

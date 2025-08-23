@@ -1,0 +1,144 @@
+# ---------------------------------------------------------------------
+# 1) lint -> restore -> build -> unit -> integration -> e2e
+# 2) release publish
+#
+# recomend:
+#   - Require branches to be up to date before merging」が有効になっていること
+#   - PR作成時にCIを通過することを強制すること
+#   - on.push.branches:["**"]としてスモーク（lint+buildが通ることを確認）な軽量テストを通すように変更
+# ---------------------------------------------------------------------
+
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  # windows-latest 専用: ローカル汚染防止・NuGet高速化・locked restore
+  # ── すべての“ユーザ領域”をワークスペースに隔離 ──────────────
+  HOME:               ${{ github.workspace }}\.home
+  USERPROFILE:        ${{ github.workspace }}\.home
+  LOCALAPPDATA:       ${{ github.workspace }}\.localappdata
+  TEMP:               ${{ github.workspace }}\.tmp
+  TMP:                ${{ github.workspace }}\.tmp
+
+  # ── .NET / NuGet をワークスペース配下に固定 ──────────────
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_HOME:    ${{ github.workspace }}\.cache\dotnet
+  DOTNET_ROOT:        ${{ github.workspace }}\.cache\dotnet
+
+  # NuGet パッケージ/HTTPキャッシュの固定パス
+  NUGET_PACKAGES:         ${{ github.workspace }}\.cache\nuget\packages
+  NUGET_HTTP_CACHE_PATH:  ${{ github.workspace }}\.cache\nuget\v3-cache
+
+
+
+
+jobs:
+  Lint:
+    name: Lint
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        dotnet-version: ["8.0.x"]
+        rid: ["win-x64"]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Caching Nuget packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/.nuget/packages
+            ~/.nuget/packages
+          key: nuget-${{ runner.os }}-dotnet-${{ matrix.dotnet-version }}-${{ hashFiles('**/packages.lock.json','**/Directory.Packages.props','global.json','NuGet.config') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-dotnet-${{ matrix.dotnet-version }}-
+            nuget-${{ runner.os }}-
+      - name: Cache HTTP v3 cache (Windows)
+        uses: actions/cache@v4
+        with:
+          path: |
+            $LOCALAPPDATA\NuGet\v3-cache
+          key: nugethttp-${{ runner.os }}-${{ matrix.rid }}-dotnet-${{ matrix.dotnet-version }}-${{ hashFiles('**/packages.lock.json', '**/Directory.Packages.props', 'global.json', 'NuGet.config') }}
+          restore-keys: |
+            nugethttp-${{ runner.os }}-${{ matrix.rid }}-dotnet-${{ matrix.dotnet-version }}-
+            nugethttp-${{ runner.os }}-${{ matrix.rid }}-
+            nugethttp-${{ runner.os }}-
+      - name: Setup .NET
+        if: ${{ env.ACT != 'true' }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: restore
+        run: dotnet restore -r ${{ matrix.rid }} --locked-mode
+
+      - name: formatting
+        run: dotnet format --no-restore --check --verbosity normal
+
+
+
+  Unit:
+    name: Unit Tests
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        dotnet-version: ["8.0.x"]
+        rid: ["win-x64", "win-x86"]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Caching Nuget packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/.nuget/packages
+            ~/.nuget/packages
+          key: nuget-${{ runner.os }}-dotnet-${{ matrix.dotnet-version }}-${{ hashFiles('**/packages.lock.json','**/Directory.Packages.props','global.json','NuGet.config') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-dotnet-${{ matrix.dotnet-version }}-
+            nuget-${{ runner.os }}-
+      - name: Cache HTTP v3 cache (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: $LOCALAPPDATA\NuGet\v3-cache
+          key: nugethttp-${{ runner.os }}-${{ matrix.rid }}-dotnet-${{ matrix.dotnet-version }}-${{ hashFiles('**/packages.lock.json', '**/Directory.Packages.props', 'global.json', 'NuGet.config') }}
+          restore-keys: |
+            nugethttp-${{ runner.os }}-${{ matrix.rid }}-dotnet-${{ matrix.dotnet-version }}-
+            nugethttp-${{ runner.os }}-${{ matrix.rid }}-
+            nugethttp-${{ runner.os }}-
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: restore
+        run: |
+          dotnet restore -r ${{ matrix.rid }} --locked-mode
+
+
+      - name: Build
+        run: dotnet build --no-restore
+
+      - name: Unit Tests
+        run: dotnet test --no-build --verbosity normal
+
+
+  # Integration:
+  #   needs: [call-restore]
+  #   runs-on: windows-latest
+  #   steps:
+  #     - name: x
+  # E2E:
+  #   needs: [call-restore]
+  #   runs-on: windows-latest
+  #   steps:
+  #     - name: x
