@@ -1,0 +1,51 @@
+# ------------------------------------------------------------
+# Workflow Name : tag-on-merge
+# Trigger       :
+#   Release PR (タイトルが "chore(main): release *" または "chore(master): release *") がマージされたとき
+# Purpose       :
+#   - リリース用 PR がマージされたことを契機に、自動でタグを作成・push する
+#   - 処理の流れは以下の通り:
+#       1. Extract version : PR タイトルからバージョン番号を抽出
+#       2. Checkout        : タグ付与対象のコミットを取得
+#       3. Tag & Push      : 抽出したバージョンで注釈付きタグを作成し、リモートへ push
+# ------------------------------------------------------------
+
+name: tag-on-merge
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  create_tag_when_release_pr_merged:
+    if: >
+      github.event.pull_request.merged == true && (
+        startsWith(github.event.pull_request.title, 'chore(main): release ') ||
+        startsWith(github.event.pull_request.title, 'chore(master): release ')
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract version from PR title
+        id: v
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          # e.g. "chore(master): release 1.2.3"
+          VERSION="${TITLE##* }"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Checkout (for annotated tag target)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create annotated tag and push
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push origin "v$VERSION"
