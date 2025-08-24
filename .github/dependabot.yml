@@ -15,9 +15,8 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"     # daily / weekly / monthly
-      day: "sunday"
-      time: "03:00"
+      interval: "dayly"     # daily / weekly / monthly
+      time: "01:40"
       timezone: "Asia/Tokyo"
     labels:
       - "dependencies"
