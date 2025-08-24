@@ -1,0 +1,174 @@
+# ------------------------------------------------------------
+# .github/labeler.yml
+# Purpose:
+#   - PR の変更ファイルパスに応じて自動ラベル付与
+#   - ラベルは事前にリポジトリ側で作成しておくこと（Settings > Labels）
+# Notes:
+#   - actions/labeler@v5 形式（changed-files / any-glob-to-any-file）
+#   - ここにないラベル（prio/*, status/* など）は人手または他Automationで付与
+#   - パターンは必要に応じて編集してください
+# ------------------------------------------------------------
+
+# TODO: プロジェクトに合わせて調整してください
+
+# ---------------------------
+# type/* 系（変更の性質）
+# ---------------------------
+type/docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - '**/*.md'
+          - '!CHANGELOG.md'          # release-please の自動更新は除外
+
+type/test:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**'
+          - '**/tests/**'
+          - '**/test_*.py'
+          - '**/*_test.py'
+          - 'pytest.ini'
+
+type/ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**'
+          - '.github/actions/**'
+
+type/build:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pyproject.toml'         # uv/ruff 設定含む
+          - 'uv.lock'
+          - 'ruff.toml'
+          - '.ruff.toml'
+          - 'setup.cfg'
+          - 'mypy.ini'
+
+type/chore:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.editorconfig'
+          - '.gitattributes'
+          - '.gitignore'
+          - '.pre-commit-config.yaml'
+          - '.vscode/**'
+          - '.devcontainer/**'
+          - '.github/ISSUE_TEMPLATE/**'
+          - '.github/PULL_REQUEST_TEMPLATE*'
+
+type/perf:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'benchmarks/**'
+
+# ---------------------------
+# area/* 系（領域・コンポーネント）
+# ---------------------------
+area/docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+
+area/tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**'
+          - '**/tests/**'
+
+area/release:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/release-please.yml'
+          - '.github/workflows/release-on-publish.yml'
+          - 'release-please-config.json'
+          - 'release-please-manifest.json'
+
+area/security:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/codeql.yml'
+          - '.github/dependabot.yml'
+          - 'SECURITY.md'
+          - 'CODEOWNERS'
+
+area/ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**'
+          - '.github/actions/**'
+
+area/packaging:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pyproject.toml'
+          - 'uv.lock'
+          - 'setup.cfg'
+          - 'scripts/release/**'
+          - 'scripts/package/**'
+
+area/scripts:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'scripts/**'
+          - 'tools/**'
+
+area/examples:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'examples/**'
+
+# src 配下の大きめ分類（テンプレート。不要なら削除/名称調整）
+area/src:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/**'
+
+area/cli:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/**/cli/**'
+          - 'src/**/main.py'
+
+area/api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/**/api/**'
+
+area/core:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/**/core/**'
+
+# ---------------------------
+# impact/* 系（影響度）
+# ---------------------------
+impact/security:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'SECURITY.md'
+          - '.github/workflows/codeql.yml'
+          - '**/vulnerability*'
+          - '**/threat*'
+
+impact/breaking:
+  # 破壊的変更はパスだけでは確定できないため、タイトル/説明での明示が望ましい。
+  # 自動付与は誤検知を避けるため無効（必要なら semantic-pr 連携や手動付与を推奨）。
+  - changed-files:
+      - any-glob-to-any-file:
+          - '!**'  # 実質無効化（テンプレートとして記載）
+
+# ---------------------------
+# その他（テンプレート置き場）
+# ---------------------------
+# 下記は将来モノレポ化する際の例。packages/* 配下の各パッケージに area ラベルを貼る。
+# area/pkg-foo:
+#   - changed-files:
+#       - any-glob-to-any-file:
+#           - 'packages/foo/**'
+#
+# area/pkg-bar:
+#   - changed-files:
+#       - any-glob-to-any-file:
+#           - 'packages/bar/**'
