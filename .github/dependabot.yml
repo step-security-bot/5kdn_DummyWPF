@@ -1,0 +1,86 @@
+# ------------------------------------------------------------
+# .github/dependabot.yml
+# Purpose:
+#   - 依存の自動更新（セキュリティ & 定期）
+#   - 本テンプレートは Python(uv/ruff/pytest) を想定
+# Notes:
+#   - uv を使用している場合、Dependabot の pip 更新では uv.lock を更新しません。
+#     → PR内で `uv lock` を実行してロック再生成する専用CIを足す運用を推奨。
+#   - モノレポ化する場合は `updates` エントリをディレクトリ単位で追加してください。
+# ------------------------------------------------------------
+version: 2
+
+updates:
+  # 1) GitHub Actions（ワークフロー／アクションの更新）
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"     # daily / weekly / monthly
+      day: "sunday"
+      time: "03:00"
+      timezone: "Asia/Tokyo"
+    labels:
+      - "dependencies"
+      - "type/chore"
+      - "area/ci"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore"
+      include: "scope"       # 例: "chore(deps): bump actions/checkout from 4 to 5"
+    groups:
+      actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # 破壊的変更はまず避ける。必要時は手動で解除/個別対応
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # 2) Python（pip 相当）
+  #    - pyproject.toml / requirements*.txt を対象に更新します
+  #    - uv.lock は Dependabot では更新されないため、PRで `uv lock` を実行するCIで補完を推奨
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Asia/Tokyo"
+    labels:
+      - "dependencies"
+      - "type/chore"
+      - "area/packaging"
+    open-pull-requests-limit: 10
+    versioning-strategy: "auto"    # widen / increase / lockfile-only(非推奨: uv.lock非対応)
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      python-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+# ------------------------------------------------------------
+# 例: モノレポ配下の別パッケージを追加する場合
+# - package-ecosystem: "pip"
+#   directory: "/packages/foo"
+#   schedule:
+#     interval: "weekly"
+#     day: "tuesday"
+#     time: "03:00"
+#     timezone: "Asia/Tokyo"
+#   labels: [ "dependencies", "type/chore", "area/pkg-foo" ]
+#   groups:
+#     foo-minor-patch:
+#       patterns: [ "*" ]
+#       update-types: [ "minor", "patch" ]
+# ------------------------------------------------------------
