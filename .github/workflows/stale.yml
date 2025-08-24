@@ -17,7 +17,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  run:
+  stale:
     runs-on: ubuntu-latest
     permissions:
       contents: write   # only for delete-branch option
