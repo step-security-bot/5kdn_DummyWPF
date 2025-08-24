@@ -1,0 +1,22 @@
+{
+  "action": "published",
+  "release": {
+    "id": 101,
+    "tag_name": "v1.2.3",
+    "target_commitish": "master",
+    "name": "v1.2.3",
+    "body": "Test release (published)",
+    "draft": false,
+    "prerelease": false,
+    "upload_url": "https://api.github.com/repos/owner/repo/releases/101/assets{?name,label}",
+    "html_url": "https://github.com/owner/repo/releases/tag/v1.2.3"
+  },
+  "repository": {
+    "id": 1,
+    "full_name": "owner/repo",
+    "name": "repo",
+    "private": false,
+    "default_branch": "master"
+  },
+  "sender": { "login": "owner", "type": "User" }
+}
