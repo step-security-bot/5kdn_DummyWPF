@@ -1,0 +1,39 @@
+# ------------------------------------------------------------
+# Workflow Name : stale
+# Trigger       : schedule (daily) / workflow_dispatch
+# Purpose       :
+#   - 休眠 Issue/PR の自動トリアージ
+#   - 重要ラベル (impact/security, prio/p0,p1 等) は除外
+# ------------------------------------------------------------
+name: stale
+
+on:
+  schedule:
+    - cron: '0 18 * * *'  # JST深夜帯に相当
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # only for delete-branch option
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 30
+          days-before-close: 14
+          operations-per-run: 200
+          stale-issue-label: 'status/stale'
+          stale-pr-label: 'status/stale'
+          exempt-issue-labels: 'prio/p0,prio/p1,impact/security'
+          exempt-pr-labels: 'prio/p0,prio/p1,impact/security'
+          stale-issue-message: |
+            このIssueは30日間更新がないため `status/stale` を付与しました。継続する場合はコメント/更新をお願いします。
+          stale-pr-message: |
+            このPRは30日間更新がないため `status/stale` を付与しました。継続する場合はコメント/更新をお願いします。
