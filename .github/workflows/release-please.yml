@@ -1,0 +1,44 @@
+# ------------------------------------------------------------
+# Workflow Name : release-please
+# Trigger       : master/main への push / 手動実行
+# Purpose       :
+#   - Conventional Commits を解析して Release PR を自動生成/更新
+#   - Release PR のマージ時にタグ & GitHub Release を作成（タグ駆動を実現）
+#   - モノレポは release-please の Manifest モードで管理
+# Notes         :
+#   - 詳細設定は repo 直下の release-please-config.json / release-please-manifest.json を使用
+#   - 作成された GitHub Release の "published" をトリガに、別途 release-on-publish 等へ連携可
+# ------------------------------------------------------------
+
+name: release-please
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write      # タグ/リリース作成
+  pull-requests: write # Release PR の作成/更新
+
+concurrency:
+  group: release-please
+  cancel-in-progress: true
+
+jobs:
+  release-please:
+    name: Run Release Please (manifest mode)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: rp
+        with:
+          # ※ PR 上のCIを動かしたい場合は PAT を推奨
+          # token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: release-please-manifest.json
+          release-type: simple
+          # see also https://github.com/googleapis/release-please-action#release-types-supported
