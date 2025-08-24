@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# act outfiles
+.act-artifacts/[0-9]*/
+
 # User-specific files
 *.rsuser
 *.suo
