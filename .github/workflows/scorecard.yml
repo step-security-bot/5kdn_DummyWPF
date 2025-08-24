@@ -1,0 +1,60 @@
+# ------------------------------------------------------------
+# Workflow Name : scorecard
+# Trigger       : push (default) / schedule (weekly)
+# Purpose       :
+#   - OpenSSF Scorecard によるサプライチェーン健全性評価
+#   - SARIF を Code Scanning にアップロード
+#   - publish_results 有効化（バッジ可） ※ v2 の要件に従い権限を限定
+# ------------------------------------------------------------
+
+# TODO: step-security/harden-runner をコミュニティ版で使用するためには public repository である必要があります
+
+name: scorecard
+
+on:
+  push:
+    branches: [ master ]
+  schedule:
+    - cron: '30 3 * * 0'  # weekly
+  workflow_dispatch:
+
+# Scorecard v2 の要件: ジョブ単位で id-token: write、actions:read/contents:read など最小権限
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analysis:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Scorecard
+        uses: ossf/scorecard-action@v2.4.2
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload to code-scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+
+      - name: Upload artifact (debug)
+        uses: actions/upload-artifact@v4
+        with:
+          name: scorecard-sarif
+          path: results.sarif
+          retention-days: 5
