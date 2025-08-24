@@ -22,20 +22,84 @@ permissions:
   contents: read
   security-events: write
 
-# TODO: c# を想定しています。プロジェクトに合わせて変更してください。
+env:
+  # act でワークフローを実行しているか確認するフラグ
+  ACT: false
+  # windows-latest 専用: ローカル汚染防止・NuGet高速化・locked restore
+  # ── すべての“ユーザ領域”をワークスペースに隔離 ──────────────
+  HOME:               ${{ github.workspace }}\.home
+  USERPROFILE:        ${{ github.workspace }}\.home
+  LOCALAPPDATA:       ${{ github.workspace }}\.localappdata
+  TEMP:               ${{ github.workspace }}\.tmp
+  TMP:                ${{ github.workspace }}\.tmp
+
+  # ── .NET / NuGet をワークスペース配下に固定 ──────────────
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_HOME:    ${{ github.workspace }}\.cache\dotnet
+  DOTNET_ROOT:        ${{ github.workspace }}\.cache\dotnet
+
+  # NuGet パッケージ/HTTPキャッシュの固定パス
+  NUGET_PACKAGES:         ${{ github.workspace }}\.cache\nuget\packages
+  NUGET_HTTP_CACHE_PATH:  ${{ github.workspace }}\.cache\nuget\v3-cache
+
 jobs:
   analyze:
     name: Analyze (CodeQL)
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     timeout-minutes: 60
+    strategy:
+      matrix:
+        dotnet-version: ["8.0.x"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      - name: Caching Nuget packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/.nuget/packages
+            ~/.nuget/packages
+            ${{ env.NUGET_PACKAGES }}
+          key: nuget-${{ runner.os }}-dotnet-${{ matrix.dotnet-version }}-${{ hashFiles('**/packages.lock.json','**/Directory.Packages.props','global.json','NuGet.config') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-dotnet-${{ matrix.dotnet-version }}-
+            nuget-${{ runner.os }}-
+      - name: Cache HTTP v3 cache (Windows)
+        uses: actions/cache@v4
+        with:
+          path: |
+            $LOCALAPPDATA\NuGet\v3-cache
+          key: nugethttp-${{ runner.os }}-dotnet-${{ matrix.dotnet-version }}-${{ hashFiles('**/packages.lock.json', '**/Directory.Packages.props', 'global.json', 'NuGet.config') }}
+          restore-keys: |
+            nugethttp-${{ runner.os }}-dotnet-${{ matrix.dotnet-version }}-
+            nugethttp-${{ runner.os }}-
+
+      - name: Setup .NET ${{ matrix.dotnet-version }}
+        if: ${{ env.ACT != 'true' }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           # see also https://docs.github.com/ja/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-your-advanced-setup-for-code-scanning#changing-the-languages-that-are-analyzed.
           languages: csharp
+          # PR は軽量、push/schedule はフル
+          queries: ${{ github.event_name == 'pull_request' && 'security-extended' || 'security-and-quality' }}
+          build-mode: manual
+
+      - name: Restore
+        run: dotnet restore --locked-mode
+
+      - name: Build
+        run: >
+          dotnet build
+            -c Release
+            --no-restore
+            --nologo
+            -p:ContinuousIntegrationBuild=true
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
