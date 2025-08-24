@@ -18,10 +18,9 @@ on:
     - cron: '30 3 * * 0'  # weekly
   workflow_dispatch:
 
-# Scorecard v2 の要件: ジョブ単位で id-token: write、actions:read/contents:read など最小権限
-permissions:
-  contents: read
-  security-events: write
+# Scorecard v2 の要件: グローバルに write 権限を付けない（read のみにする）
+# 参考: https://github.com/marketplace/actions/ossf-scorecard-action → Workflow Restrictions
+permissions: read-all
 
 jobs:
   analysis:
