@@ -41,6 +41,11 @@ jobs:
     outputs:
       version: ${{ steps.out.outputs.version }}
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+
       - id: out
         shell: bash
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
@@ -60,9 +65,14 @@ jobs:
     env:
       VERSION: ${{needs.prep.outputs.version}}
     steps:
-      - uses: actions/checkout@v5
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Caching Nuget packages
-        uses: actions/cache@v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         with:
           path: |
             ${{ github.workspace }}/.nuget/packages
@@ -72,7 +82,7 @@ jobs:
             nuget-${{ runner.os }}-dotnet-${{ matrix.dotnet-version }}-
             nuget-${{ runner.os }}-
       - name: Cache HTTP v3 cache (Windows)
-        uses: actions/cache@v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         with:
           path: |
             $LOCALAPPDATA\NuGet\v3-cache
@@ -84,7 +94,7 @@ jobs:
 
       - name: Setup .NET ${{ matrix.dotnet-version }}
         if: ${{ env.ACT != 'true' }}
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
 
@@ -120,7 +130,7 @@ jobs:
           Set-Content -Path $shaFile -Value "$($hash.Hash)  $(Split-Path $dest -Leaf)"
 
       - name: Upload artifact (zip + sha256)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ env.APP_NAME }}-${{ matrix.rid }}
           path: |
@@ -139,8 +149,13 @@ jobs:
     env:
       VERSION: ${{needs.prep.outputs.version}}
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+
       - name: Download all artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           path: dist
           merge-multiple: true
@@ -157,7 +172,7 @@ jobs:
 
       - name: Attach assets to the current Release
         if: env.ACT != 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
         with:
           files: |
             dist/*.zip
