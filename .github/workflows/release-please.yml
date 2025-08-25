@@ -20,8 +20,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write      # タグ/リリース作成
-  pull-requests: write # Release PR の作成/更新
+  contents: read
 
 concurrency:
   group: release-please
@@ -31,6 +30,10 @@ jobs:
   release-please:
     name: Run Release Please (manifest mode)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write       # タグ/リリース作成に必要
+      pull-requests: write  # Release PR の作成/更新に必要
+
     steps:
       - uses: googleapis/release-please-action@v4
         id: rp
