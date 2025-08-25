@@ -17,7 +17,7 @@ on:
     types: [closed]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   create_tag_when_release_pr_merged:
@@ -27,6 +27,9 @@ jobs:
         startsWith(github.event.pull_request.title, 'chore(master): release ')
       )
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
       - name: Extract version from PR title
         id: v
