@@ -13,8 +13,7 @@ on:
       - master
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 env:
   # act でワークフローを実行しているか確認するフラグ
