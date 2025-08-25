@@ -12,9 +12,7 @@ on:
     - cron: '0 18 * * *'  # JST深夜帯に相当
   workflow_dispatch:
 
-permissions:
-  issues: write
-  pull-requests: write
+permissions: read-all
 
 jobs:
   stale:
